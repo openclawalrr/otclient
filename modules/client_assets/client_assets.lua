@@ -10,8 +10,8 @@ local DEFAULT_CONFIG = {
   preferPackedManifestUrls = true,
   strictManifestSha256 = true,
   allowRawFallbackHashMismatch = false,
-  preferArchive = true,
-  installArchiveExtras = true,
+  preferArchive = false,
+  installArchiveExtras = false,
   archiveExtraPrefixes = { 'bin' },
   archiveExtrasDestination = '',
   installPackagedFiles = true,
@@ -518,6 +518,14 @@ local function descriptorFromRelease(config, version, release)
     treeUrl = string.format('https://api.github.com/repos/%s/git/trees/%s?recursive=1', config.repository, tag),
     archiveUrl = findReleaseArchive(release) or codeloadZipUrl(config.repository, tag)
   })
+end
+
+local function canUseArchive(descriptor)
+  return type(descriptor) == 'table'
+      and type(descriptor.archiveUrl) == 'string'
+      and descriptor.archiveUrl ~= ''
+      and type(descriptor.archiveSha256) == 'string'
+      and descriptor.archiveSha256 ~= ''
 end
 
 local function findReleaseForVersion(releases, version)
@@ -1045,6 +1053,9 @@ local function installFromArchive(config, descriptor, callback)
   if not descriptor.archiveUrl then
     return callback(false, 'No asset archive URL configured.')
   end
+  if not canUseArchive(descriptor) then
+    return callback(false, 'Asset archive is not cryptographically pinned.')
+  end
 
   local archiveName = string.format('asset-downloads/%d/%s', descriptor.version, g_resources.getFileName(descriptor.archiveUrl))
   logInfo(string.format('Downloading asset archive for client %s from %s.', versionLabel(descriptor.version), descriptor.archiveUrl))
@@ -1244,11 +1255,7 @@ local function installPackagedFiles(config, descriptor, callback)
 end
 
 local function installDescriptor(config, descriptor, callback)
-  local function finishWithPackagedFiles(ok, message)
-    if not ok then
-      return callback(false, message)
-    end
-
+  local function finishWithPackagedFiles(message)
     installPackagedFiles(config, descriptor, function(packagedOk, packagedMessage)
       callback(packagedOk, packagedMessage or message)
     end)
@@ -1256,20 +1263,38 @@ local function installDescriptor(config, descriptor, callback)
 
   local function manifestFallback()
     installFromManifest(config, descriptor, function(ok, message)
-      if ok or not descriptor.archiveUrl then
-        return finishWithPackagedFiles(ok, message)
+      if ok then
+        return finishWithPackagedFiles(message)
       end
-      installFromArchive(config, descriptor, finishWithPackagedFiles)
+
+      if not canUseArchive(descriptor) then
+        return finishWithPackagedFiles(message)
+      end
+
+      installFromArchive(config, descriptor, function(archiveOk, archiveMessage)
+        if not archiveOk then
+          return finishWithPackagedFiles(archiveMessage or message)
+        end
+
+        finishWithPackagedFiles(archiveMessage or message)
+      end)
+    end)
+  end
+
+  if (descriptor.preferArchive or config.preferArchive) and canUseArchive(descriptor) then
+    return installFromArchive(config, descriptor, function(ok, message)
+      if ok or not descriptor.manifestUrl then
+        return finishWithPackagedFiles(message)
+      end
+      manifestFallback()
     end)
   end
 
   if descriptor.preferArchive or config.preferArchive then
-    return installFromArchive(config, descriptor, function(ok, message)
-      if ok or not descriptor.manifestUrl then
-        return finishWithPackagedFiles(ok, message)
-      end
-      manifestFallback()
-    end)
+    logWarning(string.format(
+      'Archive install was requested for client %s, but the archive has no SHA-256 pin. Falling back to manifest install.',
+      versionLabel(descriptor.version)
+    ))
   end
 
   manifestFallback()

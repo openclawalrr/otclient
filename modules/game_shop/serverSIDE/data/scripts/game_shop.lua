@@ -60,6 +60,48 @@ local maxWords = 5
 local maxLength = 20
 local minChars = 2
 
+local function isString(value)
+    return type(value) == "string" and value ~= ""
+end
+
+local function isNonNegativeInteger(value)
+    return type(value) == "number" and value >= 0 and value == math.floor(value)
+end
+
+local function isInteger(value)
+    return type(value) == "number" and value == math.floor(value)
+end
+
+local function isGameShopPayloadValid(action, data)
+    if action == "fetch" then
+        return true
+    end
+
+    if type(data) ~= "table" then
+        return false
+    end
+
+    if action == "getDescription" then
+        return isString(data.category) and isString(data.name)
+    elseif action == "purchase" then
+        return isString(data.parent)
+            and isString(data.name)
+            and isNonNegativeInteger(data.price)
+            and isInteger(data.count)
+    elseif action == "transfer" then
+        return isString(data.target)
+            and isNonNegativeInteger(data.amount or 0)
+            and isNonNegativeInteger(data.amountSecond or 0)
+    elseif action == "changeName" then
+        return isString(data.category)
+            and isString(data.title)
+            and isNonNegativeInteger(data.price)
+            and isString(data.nick)
+    end
+
+    return false
+end
+
 function LoginEvent.onLogin(player)
 	player:registerEvent("GameShopExtended")
 	
@@ -868,9 +910,18 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
             return
         end
 
+        if type(json_data) ~= "table" then
+            return
+        end
+
         local action = json_data.action
         local data = json_data.data
-        if not action or not data then
+        if type(action) ~= "string" then
+            return
+        end
+
+        if not isGameShopPayloadValid(action, data) then
+            g_logger.warning(string.format("[game_shop] rejected invalid payload for action '%s'", action))
             return
         end
 

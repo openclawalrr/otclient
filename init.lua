@@ -1,25 +1,44 @@
 -- this is the first file executed when the application starts
 -- we have to load the first modules form here
 
--- updater
-Services = {
-    --updater = "http://localhost/api/updater.php", --./updater
-    --status = "http://localhost/login.php", --./client_entergame | ./client_topmenu
-    --websites = "http://localhost/?subtopic=accountmanagement", --./client_entergame "Forgot password and/or email"
-    --createAccount = "http://localhost/clientcreateaccount.php", --./client_entergame -- createAccount.lua
-    --getCoinsUrl = "http://localhost/?subtopic=shop&step=terms", --./game_market
-    clientAssets = {
-        enabled = true,
-        repository = "dudantas/tibia-client",
-        installSounds = true,
-        strictManifestSha256 = true,
-        allowRawFallbackHashMismatch = false,
-        preferArchive = true,
-        installArchiveExtras = true,
-        archiveExtraPrefixes = { "bin" },
-        installPackagedFiles = true
-    }, -- ./client_assets
-}
+local CLIENT_PROFILE = (os.getenv("TIBIAOT_PROFILE") or "vps"):lower()
+local LOCAL_BASE_URL = "http://127.0.0.1"
+local VPS_BASE_URL = (os.getenv("TIBIAOT_VPS_BASE_URL") or os.getenv("TIBIAOT_BASE_URL") or "http://93.188.166.199"):gsub("/+$", "")
+
+local function normalizeBaseUrl(baseUrl)
+    return (baseUrl or ""):gsub("/+$", "")
+end
+
+local function buildUrl(baseUrl, suffix)
+    return normalizeBaseUrl(baseUrl) .. suffix
+end
+
+local function buildServices(baseUrl)
+    return {
+        -- updater = buildUrl(baseUrl, "/api/updater.php"), -- optional
+        status = buildUrl(baseUrl, "/login.php"), -- ./client_entergame | ./client_topmenu
+        websites = buildUrl(baseUrl, "/?subtopic=accountmanagement"), -- ./client_entergame "Forgot password and/or email"
+        createAccount = buildUrl(baseUrl, "/clientcreateaccount.php"), -- ./client_entergame -- createAccount.lua
+        getCoinsUrl = buildUrl(baseUrl, "/?subtopic=shop&step=terms"), -- ./game_market
+        clientAssets = {
+            enabled = true,
+            repository = "dudantas/tibia-client",
+            installSounds = true,
+            strictManifestSha256 = true,
+            allowRawFallbackHashMismatch = false,
+            preferArchive = false,
+            installArchiveExtras = false,
+            archiveExtraPrefixes = { "bin" },
+            installPackagedFiles = true
+        } -- ./client_assets
+    }
+end
+
+local activeBaseUrl = CLIENT_PROFILE == "local" and LOCAL_BASE_URL or VPS_BASE_URL
+
+-- Default to VPS so local desktop/mac builds point at the deployed stack.
+-- Set TIBIAOT_PROFILE=local to switch back to loopback endpoints.
+Services = buildServices(activeBaseUrl)
 
 --- Enables or disables the entire server configuration block.
 -- Set to `false` to disable all configuration below.
@@ -60,37 +79,11 @@ if ENABLE_SERVERS then
     -- @table Servers_init
     --
     Servers_init = {
-
-        -- Local login server
-        ---
-        -- Configuration for local login server.
-        -- @class table
-        -- @name local_login
-        -- @field port Port used for HTTP connection
-        -- @field protocol Protocol identifier used by the application
-        -- @field httpLogin Enables HTTP-based login on the server
-        -- @field useAuthenticator Enables additional authentication layer
-        --
-        ["http://127.0.0.1/login.php"] = {
+        [buildUrl(activeBaseUrl, "/login.php")] = {
             port = 80,
             protocol = 1511,
             httpLogin = true,
             useAuthenticator = false
-        },
-
-        -- External server
-        ---
-        -- Configuration for external server ip.net.
-        -- @class table
-        -- @name ip_net
-        -- @field port TCP port used for connection
-        -- @field protocol Protocol identifier used by the server
-        -- @field httpLogin Indicates if the server allows HTTP login
-        --
-        ["ip.net"] = {
-            port = 7171,
-            protocol = 860,
-            httpLogin = false
         }
     }
 end

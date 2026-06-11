@@ -1,0 +1,79 @@
+services:
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-change-me-root}
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-canary}
+      MARIADB_USER: ${MARIADB_USER:-canary}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-change-me-db}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -uroot -p$${MARIADB_ROOT_PASSWORD} --silent"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  game-server:
+    image: ghcr.io/opentibiabr/canary:3.6.1
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      OT_DB_HOST: db
+      OT_DB_PORT: 3306
+      OT_DB_USER: ${MARIADB_USER:-canary}
+      OT_DB_PASSWORD: ${MARIADB_PASSWORD:-change-me-db}
+      OT_DB_DATABASE: ${MARIADB_DATABASE:-canary}
+      OT_SERVER_IP: ${OT_SERVER_IP:-0.0.0.0}
+      OT_SERVER_LOGIN_PORT: ${OT_SERVER_LOGIN_PORT:-7171}
+      OT_SERVER_GAME_PORT: ${OT_SERVER_GAME_PORT:-7172}
+      OT_SERVER_STATUS_PORT: ${OT_SERVER_STATUS_PORT:-7171}
+      OT_SERVER_TEST_ACCOUNTS: ${OT_SERVER_TEST_ACCOUNTS:-false}
+      OT_SERVER_DATA: ${OT_SERVER_DATA:-data-otservbr-global}
+      OT_SERVER_MAP: ${OT_SERVER_MAP:-https://github.com/opentibiabr/canary/releases/download/v3.6.0/otservbr.otbm}
+    ports:
+      - "${OT_SERVER_LOGIN_PORT:-7171}:7171"
+      - "${OT_SERVER_GAME_PORT:-7172}:7172"
+    volumes:
+      - canary-data:/var/lib/canary
+
+  login-server:
+    image: opentibiabr/login-server:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      MYSQL_HOST: db
+      MYSQL_PORT: 3306
+      MYSQL_USER: ${MARIADB_USER:-canary}
+      MYSQL_PASS: ${MARIADB_PASSWORD:-change-me-db}
+      MYSQL_DBNAME: ${MARIADB_DATABASE:-canary}
+      LOGIN_IP: ${LOGIN_IP:-0.0.0.0}
+      LOGIN_HTTP_PORT: ${LOGIN_HTTP_PORT:-8088}
+      LOGIN_GRPC_PORT: ${LOGIN_GRPC_PORT:-50051}
+      ENV_LOG_LEVEL: ${ENV_LOG_LEVEL:-info}
+      RATE_LIMITER_BURST: ${RATE_LIMITER_BURST:-10}
+      RATE_LIMITER_RATE: ${RATE_LIMITER_RATE:-1}
+    ports:
+      - "${LOGIN_HTTP_PORT:-8088}:8088"
+
+  web-client:
+    build:
+      context: .
+      dockerfile: Dockerfile.vps
+    image: tibiaot-web:latest
+    restart: unless-stopped
+    ports:
+      - "${TIBIAOT_WEB_PORT:-8080}:80"
+
+volumes:
+  mariadb-data:
+  canary-data:

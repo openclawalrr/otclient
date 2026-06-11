@@ -197,7 +197,7 @@ HttpResult_ptr getDownloadedFile(std::string path)
 void ResourceManager::init(const char* argv0)
 {
     PHYSFS_init(argv0);
-    PHYSFS_permitSymbolicLinks(1);
+    PHYSFS_permitSymbolicLinks(0);
 
 #if defined(WIN32)
     char fileName[255];

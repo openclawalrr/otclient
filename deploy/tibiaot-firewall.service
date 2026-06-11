@@ -1,0 +1,12 @@
+[Unit]
+Description=Harden TibiaOt host firewall rules
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/tibiaot-firewall.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

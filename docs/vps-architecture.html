@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TibiaOt VPS Architecture</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-2: #0b1220;
+      --stroke: #334155;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --input: #1e293b;
+      --process: #0f766e;
+      --storage: #1d4ed8;
+      --external: #374151;
+      --risk: #b45309;
+      --accent: #38bdf8;
+    }
+    html, body {
+      margin: 0;
+      background: linear-gradient(180deg, #0b1020 0%, var(--bg) 100%);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .wrap {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .title {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0 0 8px;
+    }
+    .subtitle {
+      color: var(--muted);
+      margin: 0 0 20px;
+      line-height: 1.4;
+    }
+    .card {
+      background: rgba(15, 23, 42, 0.72);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+    }
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .legend div {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .badge {
+      display: inline-block;
+      min-width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1 class="title">TibiaOt: fluxo com cliente local, VPS e banco na VPS</h1>
+    <p class="subtitle">
+      O cliente não fala direto com o banco. Ele conversa com os serviços publicados na VPS.
+      O banco fica isolado atrás do backend e recebe apenas conexões internas.
+    </p>
+
+    <div class="card">
+      <svg viewBox="0 0 1400 900" role="img" aria-label="Diagrama de arquitetura TibiaOt com cliente local, VPS, backend e banco">
+        <defs>
+          <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+            <path d="M 0 0 L 12 6 L 0 12 z" fill="#94a3b8"></path>
+          </marker>
+        </defs>
+
+        <!-- connectors -->
+        <path d="M 320 170 L 500 170" stroke="#94a3b8" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+        <path d="M 320 255 L 500 255" stroke="#94a3b8" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+        <path d="M 320 340 L 500 340" stroke="#94a3b8" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+        <path d="M 320 425 L 500 425" stroke="#94a3b8" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+        <path d="M 320 510 L 500 510" stroke="#94a3b8" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+
+        <path d="M 880 230 L 1040 230" stroke="#94a3b8" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+        <path d="M 880 360 L 1040 360" stroke="#94a3b8" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+        <path d="M 880 490 L 1040 490" stroke="#94a3b8" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+        <path d="M 700 555 L 700 650" stroke="#94a3b8" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+
+        <path d="M 1040 360 L 1220 360" stroke="#94a3b8" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+        <path d="M 1220 460 L 1220 560" stroke="#94a3b8" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+
+        <!-- left column -->
+        <rect x="60" y="90" rx="18" ry="18" width="250" height="460" fill="rgba(30,41,59,0.92)" stroke="#475569" stroke-width="2"/>
+        <text x="85" y="125" fill="#e5e7eb" font-size="22" font-weight="700">Cliente local</text>
+        <text x="85" y="150" fill="#94a3b8" font-size="14">Browser ou app instalada</text>
+
+        <rect x="85" y="190" rx="14" ry="14" width="200" height="56" fill="#1f2937" stroke="#64748b" />
+        <text x="185" y="225" text-anchor="middle" fill="#e5e7eb" font-size="16">OTClient Web</text>
+
+        <rect x="85" y="275" rx="14" ry="14" width="200" height="56" fill="#1f2937" stroke="#64748b" />
+        <text x="185" y="310" text-anchor="middle" fill="#e5e7eb" font-size="16">OTClient Mac / Linux</text>
+
+        <rect x="85" y="360" rx="14" ry="14" width="200" height="56" fill="#1f2937" stroke="#64748b" />
+        <text x="185" y="395" text-anchor="middle" fill="#e5e7eb" font-size="16">Config `init.lua`</text>
+
+        <rect x="85" y="445" rx="14" ry="14" width="200" height="56" fill="#1f2937" stroke="#64748b" />
+        <text x="185" y="480" text-anchor="middle" fill="#e5e7eb" font-size="16">Cache e assets locais</text>
+
+        <!-- middle column -->
+        <rect x="500" y="90" rx="18" ry="18" width="380" height="520" fill="rgba(17,24,39,0.92)" stroke="#475569" stroke-width="2"/>
+        <text x="525" y="125" fill="#e5e7eb" font-size="22" font-weight="700">VPS pública</text>
+        <text x="525" y="150" fill="#94a3b8" font-size="14">Entrada HTTP/WebSocket e backend do jogo</text>
+
+        <rect x="530" y="185" rx="14" ry="14" width="320" height="62" fill="#0f766e" stroke="#5eead4" stroke-width="2"/>
+        <text x="690" y="221" text-anchor="middle" fill="#ecfeff" font-size="18" font-weight="700">Nginx / Static Web</text>
+
+        <rect x="530" y="280" rx="14" ry="14" width="320" height="62" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
+        <text x="690" y="316" text-anchor="middle" fill="#e0f2fe" font-size="18" font-weight="700">Login / API / Websites</text>
+
+        <rect x="530" y="375" rx="14" ry="14" width="320" height="62" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
+        <text x="690" y="411" text-anchor="middle" fill="#e0f2fe" font-size="18" font-weight="700">Game Server</text>
+
+        <rect x="530" y="470" rx="14" ry="14" width="320" height="62" fill="#7c2d12" stroke="#f59e0b" stroke-width="2"/>
+        <text x="690" y="506" text-anchor="middle" fill="#ffedd5" font-size="18" font-weight="700">Endpoints do shop / account</text>
+
+        <rect x="530" y="565" rx="14" ry="14" width="320" height="28" fill="#111827" stroke="#475569" stroke-width="1"/>
+        <text x="690" y="585" text-anchor="middle" fill="#94a3b8" font-size="13">O cliente aponta para esses endpoints via `init.lua`</text>
+
+        <!-- right column -->
+        <rect x="1040" y="160" rx="18" ry="18" width="300" height="360" fill="rgba(17,24,39,0.92)" stroke="#475569" stroke-width="2"/>
+        <text x="1065" y="195" fill="#e5e7eb" font-size="22" font-weight="700">Persistência</text>
+        <text x="1065" y="220" fill="#94a3b8" font-size="14">Somente conexões internas</text>
+
+        <rect x="1070" y="260" rx="14" ry="14" width="240" height="74" fill="#1d4ed8" stroke="#93c5fd" stroke-width="2"/>
+        <text x="1190" y="292" text-anchor="middle" fill="#eff6ff" font-size="18" font-weight="700">MariaDB / MySQL</text>
+        <text x="1190" y="316" text-anchor="middle" fill="#dbeafe" font-size="13">accounts, players, shop_history</text>
+
+        <rect x="1070" y="372" rx="14" ry="14" width="240" height="74" fill="#1e293b" stroke="#64748b" />
+        <text x="1190" y="405" text-anchor="middle" fill="#e5e7eb" font-size="18" font-weight="700">Volumes Docker</text>
+        <text x="1190" y="429" text-anchor="middle" fill="#94a3b8" font-size="13">db + logs + uploads</text>
+
+        <!-- bottom notes -->
+        <rect x="60" y="620" rx="18" ry="18" width="1280" height="210" fill="rgba(15,23,42,0.65)" stroke="#334155" stroke-width="2"/>
+        <text x="85" y="660" fill="#e5e7eb" font-size="20" font-weight="700">Fluxo prático</text>
+        <text x="85" y="695" fill="#cbd5e1" font-size="16">1. O cliente local abre o browser ou o app nativo.</text>
+        <text x="85" y="725" fill="#cbd5e1" font-size="16">2. O cliente busca assets e autenticação nos endpoints públicos da VPS.</text>
+        <text x="85" y="755" fill="#cbd5e1" font-size="16">3. O backend do jogo e da loja fala com o banco na mesma VPS, por rede interna Docker.</text>
+        <text x="85" y="785" fill="#cbd5e1" font-size="16">4. O cliente nunca acessa o banco direto.</text>
+
+        <rect x="790" y="646" rx="12" ry="12" width="520" height="170" fill="rgba(17,24,39,0.92)" stroke="#475569" stroke-width="1.5"/>
+        <text x="815" y="676" fill="#e5e7eb" font-size="18" font-weight="700">Conexão do cliente local com a API da VPS</text>
+        <text x="815" y="706" fill="#cbd5e1" font-size="15">Ajustar `Services.updater`, `Services.status`, `Services.websites`,</text>
+        <text x="815" y="730" fill="#cbd5e1" font-size="15">`Services.createAccount` e `Services.getCoinsUrl` em `init.lua`.</text>
+        <text x="815" y="760" fill="#cbd5e1" font-size="15">Se o browser client e a API estiverem no mesmo domínio, reduz CORS.</text>
+        <text x="815" y="790" fill="#cbd5e1" font-size="15">Se forem domínios diferentes, a API precisa liberar a origem do browser.</text>
+      </svg>
+    </div>
+
+    <div class="legend">
+      <div><span class="badge" style="background: var(--input);"></span>Cliente / origem do usuário</div>
+      <div><span class="badge" style="background: var(--process);"></span>Serviço público na VPS</div>
+      <div><span class="badge" style="background: var(--storage);"></span>Banco e persistência</div>
+      <div><span class="badge" style="background: var(--risk);"></span>Área que exige cuidado operacional</div>
+    </div>
+  </div>
+</body>
+</html>
