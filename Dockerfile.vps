@@ -158,12 +158,14 @@ RUN export VCPKG_ROOT=/opt/vcpkg \
 		-DTOGGLE_BIN_FOLDER=ON \
 		-DOPTIONS_ENABLE_IPO=OFF \
 		-DOTCLIENT_BUILD_TESTS=OFF \
+		-DTOGGLE_PRE_COMPILED_HEADER=OFF \
+		-DSPEED_UP_BUILD_UNITY=OFF \
 		-DBUILD_STATIC_LIBRARY=ON \
 		-DVCPKG_MANIFEST_INSTALL=OFF \
 		-DVCPKG_INSTALLED_DIR=/srv/vcpkg_installed \
 		-DVCPKG_TARGET_TRIPLET="${vcpkg_triplet}" \
 		-DVCPKG_HOST_TRIPLET="${vcpkg_triplet}" \
-	&& cmake --build --preset linux-release --target otclient --parallel 2
+	&& cmake --build --preset linux-release --target otclient --parallel 1
 
 FROM nginx:1.27-alpine AS runtime
 
