@@ -36,6 +36,8 @@ Those headers are required because the browser build uses pthreads/shared memory
 
 The browser bundle also ships precompressed `*.gz` artifacts for the large `otclient.js`, `otclient.wasm`, and `otclient.data` files so first load is much faster on slower links.
 
+The browser bundle lives on `8090`, but the account/login API stays on `8088`. The client now uses the API base separately, so `clientcreateaccount.php` and `login.php` resolve against `TIBIAOT_API_BASE_URL` instead of the browser bundle origin.
+
 ## Connecting a local client to the VPS API
 
 Yes. The desktop client can point directly at the VPS endpoints by changing the `Services` block in `init.lua` or by creating a site-specific config override.
@@ -56,10 +58,10 @@ For example, point these URLs at your VPS domain:
 
 If the browser client and API are hosted under the same public origin, the browser build is simpler because it avoids CORS issues. If they are on different domains, your API must allow the browser origin explicitly.
 
-You can also override the VPS base URL without editing Lua:
+You can also override the VPS API base URL without editing Lua:
 
 ```bash
-TIBIAOT_VPS_BASE_URL=http://your-domain-or-ip:8090
+TIBIAOT_API_BASE_URL=http://your-domain-or-ip:8088
 ```
 
 ## What this compose does not include

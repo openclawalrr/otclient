@@ -3,7 +3,9 @@
 
 local CLIENT_PROFILE = (os.getenv("TIBIAOT_PROFILE") or "vps"):lower()
 local LOCAL_BASE_URL = "http://127.0.0.1"
-local VPS_BASE_URL = (os.getenv("TIBIAOT_VPS_BASE_URL") or os.getenv("TIBIAOT_BASE_URL") or "http://93.188.166.199:8090"):gsub("/+$", "")
+local LOCAL_WEB_BASE_URL = "http://127.0.0.1:8090"
+local VPS_WEB_BASE_URL = (os.getenv("TIBIAOT_WEB_BASE_URL") or "http://93.188.166.199:8090"):gsub("/+$", "")
+local VPS_API_BASE_URL = (os.getenv("TIBIAOT_API_BASE_URL") or os.getenv("TIBIAOT_VPS_BASE_URL") or os.getenv("TIBIAOT_BASE_URL") or "http://93.188.166.199:8088"):gsub("/+$", "")
 
 local function normalizeBaseUrl(baseUrl)
     return (baseUrl or ""):gsub("/+$", "")
@@ -34,7 +36,8 @@ local function buildServices(baseUrl)
     }
 end
 
-local activeBaseUrl = CLIENT_PROFILE == "local" and LOCAL_BASE_URL or VPS_BASE_URL
+local activeBaseUrl = CLIENT_PROFILE == "local" and LOCAL_BASE_URL or VPS_API_BASE_URL
+local activeWebBaseUrl = CLIENT_PROFILE == "local" and LOCAL_WEB_BASE_URL or VPS_WEB_BASE_URL
 
 -- Default to VPS so local desktop/mac builds point at the deployed stack.
 -- Set TIBIAOT_PROFILE=local to switch back to loopback endpoints.

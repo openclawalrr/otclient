@@ -72,15 +72,35 @@ local function reportRequestWarning(requestType, msg, errorCode)
     g_logger.warning(("[Webscraping - %s] %s"):format(requestType, msg), errorCode)
 end
 
+local function showCreateAccountBackendError(requestType, details)
+    local message = details
+    if requestType == "getaccountcreationstatus" then
+        message = message or "The account creation server is unavailable. Check that the API is running on port 8088."
+    elseif requestType == "generatecharactername" then
+        message = message or "Unable to generate a character name because the account creation server is unavailable."
+    elseif requestType == "createaccountandcharacter" then
+        message = message or "Unable to submit the account creation form because the API is unavailable on port 8088."
+    else
+        message = message or "The account creation server is not responding."
+    end
+    displayErrorBox(tr("Create Account Error"), message)
+end
+
 local function handleHttpResponse(requestType, callback)
     return function(message, err)
         if err then
             reportRequestWarning(requestType, requestType, "fx handleHttpResponse")
+            if requestType == "getaccountcreationstatus" or requestType == "generatecharactername" or requestType == "createaccountandcharacter" then
+                showCreateAccountBackendError(requestType)
+            end
             return callback(nil, err)
         end
         local json_part = message:match("{.*}")
         if not json_part then
             reportRequestWarning(requestType, "ERROR: JSON not found in the response", "fx handleHttpResponse")
+            if requestType == "getaccountcreationstatus" or requestType == "generatecharactername" or requestType == "createaccountandcharacter" then
+                showCreateAccountBackendError(requestType, "The account creation server returned an unexpected response.")
+            end
             return
         end
         local status, response = pcall(json.decode, json_part)
@@ -89,6 +109,9 @@ local function handleHttpResponse(requestType, callback)
                 ensableBtnCreateNewAccount()
             end
             reportRequestWarning(requestType, "[HTTP] JSON decode error: " .. response, "fx handleHttpResponse")
+            if requestType == "getaccountcreationstatus" or requestType == "generatecharactername" or requestType == "createaccountandcharacter" then
+                showCreateAccountBackendError(requestType, "The account creation server returned invalid data.")
+            end
             return
         end
         if type(response) ~= "table" then
@@ -482,6 +505,7 @@ function onClickStartPlaying()
         end
         if err or not data then
             reportRequestWarning("createAccountAndCharacter", err, "fx onClickStartPlaying")
+            showCreateAccountBackendError("createaccountandcharacter")
             return
         end
         if data.Success then
@@ -497,6 +521,7 @@ function onClickStartPlaying()
             end
         else
             reportRequestWarning("createAccountAndCharacter", data.errorMessage, "fx onClickStartPlaying")
+            displayErrorBox(tr("Create Account Error"), data.errorMessage or "The account creation server rejected the request.")
         end
     end)
 end
