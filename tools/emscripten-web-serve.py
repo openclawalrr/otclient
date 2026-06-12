@@ -31,26 +31,52 @@ DEFAULT_HEADERS = {
 class HeaderInjectorHandler(http.server.SimpleHTTPRequestHandler):
     extra_headers: dict[str, str] = {}
     default_origin: str | None = None
+    gzip_encoding: str | None = None
 
     def _emit_extra_headers(self) -> None:
         for key, value in self.extra_headers.items():
             if key.lower() == "content-type":
                 continue  # normal flow decides actual mime type per file
             self.send_header(key, value)
+        if self.gzip_encoding:
+            self.send_header("Content-Encoding", self.gzip_encoding)
+            self.send_header("Vary", "Accept-Encoding, Origin, Host")
         allow_origin = self._determine_origin()
         if allow_origin:
             self.send_header("Access-Control-Allow-Origin", allow_origin)
-            self.send_header("Vary", "Origin, Host")
+            if not self.gzip_encoding:
+                self.send_header("Vary", "Origin, Host")
 
     def end_headers(self) -> None:  # type: ignore[override]
         self._emit_extra_headers()
         super().end_headers()
 
     def guess_type(self, path: str) -> str:
+        if path.endswith(".gz"):
+            path = path[:-3]
         ctype = super().guess_type(path)
         if path.endswith(".wasm"):
             return DEFAULT_HEADERS["Content-Type"]
         return ctype
+
+    def send_head(self):  # type: ignore[override]
+        original_path = self.path
+        self.gzip_encoding = None
+
+        accept_encoding = self.headers.get("Accept-Encoding", "")
+        if "gzip" in accept_encoding:
+            disk_path = self.translate_path(self.path)
+            if os.path.isfile(disk_path):
+                gz_path = f"{disk_path}.gz"
+                if os.path.isfile(gz_path):
+                    self.gzip_encoding = "gzip"
+                    self.path = f"{self.path}.gz"
+
+        try:
+            return super().send_head()
+        finally:
+            self.path = original_path
+            self.gzip_encoding = None
 
     def _determine_origin(self) -> str | None:
         origin = self.headers.get("Origin")

@@ -34,6 +34,8 @@ The image serves the Emscripten browser artifacts through nginx with the headers
 
 Those headers are required because the browser build uses pthreads/shared memory.
 
+The browser bundle also ships precompressed `*.gz` artifacts for the large `otclient.js`, `otclient.wasm`, and `otclient.data` files so first load is much faster on slower links.
+
 ## Connecting a local client to the VPS API
 
 Yes. The desktop client can point directly at the VPS endpoints by changing the `Services` block in `init.lua` or by creating a site-specific config override.

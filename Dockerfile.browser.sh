@@ -12,3 +12,4 @@ docker rm -f otclient-web-tmp >/dev/null 2>&1 || true
 docker create --name otclient-web-tmp otclient-web:latest
 docker cp otclient-web-tmp:/otclient-web "${OUTPUT_DIR}"
 docker rm otclient-web-tmp
+gzip -9 -f "${OUTPUT_DIR}"/otclient.{html,js,wasm,data}
