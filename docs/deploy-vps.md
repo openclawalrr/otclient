@@ -15,7 +15,7 @@ docker compose -f docker-compose.vps.yml up -d --build
 
 Default exposed ports:
 
-- `8080` browser client
+- `8090` browser client
 - `8088` login webservice
 - `7171` login/status
 - `7172` game
@@ -23,7 +23,7 @@ Default exposed ports:
 Override the web port with:
 
 ```bash
-TIBIAOT_WEB_PORT=80 docker compose -f docker-compose.vps.yml up -d --build
+TIBIAOT_WEB_PORT=8090 docker compose -f docker-compose.vps.yml up -d --build
 ```
 
 The image serves the Emscripten browser artifacts through nginx with the headers required for cross-origin isolation:
@@ -57,7 +57,7 @@ If the browser client and API are hosted under the same public origin, the brows
 You can also override the VPS base URL without editing Lua:
 
 ```bash
-TIBIAOT_VPS_BASE_URL=http://your-domain-or-ip
+TIBIAOT_VPS_BASE_URL=http://your-domain-or-ip:8090
 ```
 
 ## What this compose does not include

@@ -11,6 +11,13 @@ ARG VCPKG_BINARY_CACHE_ACCESS=read
 ARG VCPKG_BINARY_SOURCES
 ENV VCPKG_BINARY_SOURCES=${VCPKG_BINARY_SOURCES}
 
+RUN set -eux; \
+	case "$(uname -m)" in \
+		x86_64|amd64) echo x64-linux > /tmp/vcpkg-triplet ;; \
+		aarch64|arm64) echo arm64-linux > /tmp/vcpkg-triplet ;; \
+		*) echo "Unsupported architecture: $(uname -m)" >&2; exit 1 ;; \
+	esac
+
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 	--mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
 	apt-get update && apt-get install -y --no-install-recommends \
@@ -97,11 +104,12 @@ RUN --mount=type=secret,id=github_token,required=false \
 		else \
 			unset VCPKG_BINARY_SOURCES; \
 		fi; \
+		vcpkg_triplet="$(cat /tmp/vcpkg-triplet)"; \
 		/opt/vcpkg/vcpkg install \
 			--x-manifest-root=/opt/vcpkg_manifest \
 			--x-install-root=/opt/vcpkg_installed \
-			--triplet=x64-linux \
-			--host-triplet=x64-linux; \
+			--triplet="${vcpkg_triplet}" \
+			--host-triplet="${vcpkg_triplet}"; \
 		if [ -n "${nuget_config}" ]; then rm -f "${nuget_config}"; fi'
 
 FROM ubuntu:24.04 AS build
@@ -113,6 +121,7 @@ ENV TZ=Etc/UTC
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 	--mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
 	apt-get update && apt-get install -y --no-install-recommends \
+	build-essential \
 	ca-certificates \
 	cmake \
 	git \
@@ -141,8 +150,10 @@ COPY cmake /srv/cmake
 COPY src /srv/src
 COPY --from=dependencies /opt/vcpkg /opt/vcpkg
 COPY --from=dependencies /opt/vcpkg_installed /srv/vcpkg_installed
+COPY --from=dependencies /tmp/vcpkg-triplet /tmp/vcpkg-triplet
 
 RUN export VCPKG_ROOT=/opt/vcpkg \
+	&& vcpkg_triplet="$(cat /tmp/vcpkg-triplet)" \
 	&& cmake --preset linux-release \
 		-DTOGGLE_BIN_FOLDER=ON \
 		-DOPTIONS_ENABLE_IPO=OFF \
@@ -150,6 +161,8 @@ RUN export VCPKG_ROOT=/opt/vcpkg \
 		-DBUILD_STATIC_LIBRARY=ON \
 		-DVCPKG_MANIFEST_INSTALL=OFF \
 		-DVCPKG_INSTALLED_DIR=/srv/vcpkg_installed \
+		-DVCPKG_TARGET_TRIPLET="${vcpkg_triplet}" \
+		-DVCPKG_HOST_TRIPLET="${vcpkg_triplet}" \
 	&& cmake --build --preset linux-release --target otclient
 
 FROM nginx:1.27-alpine AS runtime

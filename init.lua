@@ -3,7 +3,7 @@
 
 local CLIENT_PROFILE = (os.getenv("TIBIAOT_PROFILE") or "vps"):lower()
 local LOCAL_BASE_URL = "http://127.0.0.1"
-local VPS_BASE_URL = (os.getenv("TIBIAOT_VPS_BASE_URL") or os.getenv("TIBIAOT_BASE_URL") or "http://93.188.166.199"):gsub("/+$", "")
+local VPS_BASE_URL = (os.getenv("TIBIAOT_VPS_BASE_URL") or os.getenv("TIBIAOT_BASE_URL") or "http://93.188.166.199:8090"):gsub("/+$", "")
 
 local function normalizeBaseUrl(baseUrl)
     return (baseUrl or ""):gsub("/+$", "")
