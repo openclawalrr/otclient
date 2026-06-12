@@ -163,7 +163,7 @@ RUN export VCPKG_ROOT=/opt/vcpkg \
 		-DVCPKG_INSTALLED_DIR=/srv/vcpkg_installed \
 		-DVCPKG_TARGET_TRIPLET="${vcpkg_triplet}" \
 		-DVCPKG_HOST_TRIPLET="${vcpkg_triplet}" \
-	&& cmake --build --preset linux-release --target otclient
+	&& cmake --build --preset linux-release --target otclient --parallel 2
 
 FROM nginx:1.27-alpine AS runtime
 
