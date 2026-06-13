@@ -1,0 +1,36 @@
+FROM php:8.3-apache
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    default-mysql-client \
+    git \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    unzip \
+  && docker-php-ext-install mbstring pdo_mysql xml zip \
+  && a2enmod rewrite headers \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /opt
+RUN git clone --depth 1 https://github.com/opentibiabr/myaac.git /opt/myaac
+
+RUN rm -rf /var/www/html/* && cp -a /opt/myaac/. /var/www/html/
+RUN mkdir -p /var/www/html/vendor \
+  && printf '%s\n' '<?php' '// Bundled MyAAC dependencies live in system/libs.' 'return true;' > /var/www/html/vendor/autoload.php
+
+COPY deploy/myaac/config.local.php /var/www/html/config.local.php
+COPY deploy/myaac/server/config.lua /srv/myaac-server/config.lua
+COPY deploy/myaac/entrypoint.sh /usr/local/bin/myaac-entrypoint.sh
+
+RUN mkdir -p /srv/myaac-server/data/XML \
+  && curl -fsSL https://raw.githubusercontent.com/opentibiabr/canary/main/data/XML/vocations.xml -o /srv/myaac-server/data/XML/vocations.xml \
+  && curl -fsSL https://raw.githubusercontent.com/opentibiabr/canary/main/data/stages.lua -o /srv/myaac-server/data/stages.lua \
+  && chown -R www-data:www-data /srv/myaac-server /var/www/html \
+  && chmod +x /usr/local/bin/myaac-entrypoint.sh
+
+EXPOSE 80
+
+ENTRYPOINT ["/usr/local/bin/myaac-entrypoint.sh"]
+CMD ["apache2-foreground"]

@@ -75,11 +75,11 @@ end
 local function showCreateAccountBackendError(requestType, details)
     local message = details
     if requestType == "getaccountcreationstatus" then
-        message = message or "The account creation server is unavailable. Check that the API is running on port 8088."
+        message = message or "The account creation server is unavailable. Check that the API is running on port 8089."
     elseif requestType == "generatecharactername" then
         message = message or "Unable to generate a character name because the account creation server is unavailable."
     elseif requestType == "createaccountandcharacter" then
-        message = message or "Unable to submit the account creation form because the API is unavailable on port 8088."
+        message = message or "Unable to submit the account creation form because the account creation server is unavailable on port 8089."
     else
         message = message or "The account creation server is not responding."
     end

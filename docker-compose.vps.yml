@@ -65,6 +65,26 @@ services:
     ports:
       - "${LOGIN_HTTP_PORT:-8088}:8088"
 
+  account-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.myaac
+    image: tibiaot-myaac:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      MYAAC_DB_HOST: db
+      MYAAC_DB_PORT: 3306
+      MYAAC_DB_USER: ${MARIADB_USER:-canary}
+      MYAAC_DB_PASSWORD: ${MARIADB_PASSWORD:-change-me-db}
+      MYAAC_DB_NAME: ${MARIADB_DATABASE:-canary}
+      MYAAC_SERVER_PATH: /srv/myaac-server
+      MYAAC_TIMEZONE: ${MYAAC_TIMEZONE:-America/Bahia}
+    ports:
+      - "${MYAAC_HTTP_PORT:-8089}:80"
+
   web-client:
     build:
       context: .

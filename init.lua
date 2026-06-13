@@ -4,7 +4,9 @@
 local CLIENT_PROFILE = (os.getenv("TIBIAOT_PROFILE") or "vps"):lower()
 local LOCAL_BASE_URL = "http://127.0.0.1"
 local LOCAL_WEB_BASE_URL = "http://127.0.0.1:8090"
+local LOCAL_ACCOUNT_BASE_URL = "http://127.0.0.1:8089"
 local VPS_WEB_BASE_URL = (os.getenv("TIBIAOT_WEB_BASE_URL") or "http://93.188.166.199:8090"):gsub("/+$", "")
+local VPS_ACCOUNT_BASE_URL = (os.getenv("TIBIAOT_ACCOUNT_BASE_URL") or os.getenv("TIBIAOT_SITE_BASE_URL") or "http://93.188.166.199:8089"):gsub("/+$", "")
 local VPS_API_BASE_URL = (os.getenv("TIBIAOT_API_BASE_URL") or os.getenv("TIBIAOT_VPS_BASE_URL") or os.getenv("TIBIAOT_BASE_URL") or "http://93.188.166.199:8088"):gsub("/+$", "")
 
 local function normalizeBaseUrl(baseUrl)
@@ -15,13 +17,13 @@ local function buildUrl(baseUrl, suffix)
     return normalizeBaseUrl(baseUrl) .. suffix
 end
 
-local function buildServices(baseUrl)
+local function buildServices(accountBaseUrl, apiBaseUrl)
     return {
         -- updater = buildUrl(baseUrl, "/api/updater.php"), -- optional
-        status = buildUrl(baseUrl, "/login.php"), -- ./client_entergame | ./client_topmenu
-        websites = buildUrl(baseUrl, "/?subtopic=accountmanagement"), -- ./client_entergame "Forgot password and/or email"
-        createAccount = buildUrl(baseUrl, "/clientcreateaccount.php"), -- ./client_entergame -- createAccount.lua
-        getCoinsUrl = buildUrl(baseUrl, "/?subtopic=shop&step=terms"), -- ./game_market
+        status = buildUrl(apiBaseUrl, "/login.php"), -- ./client_entergame | ./client_topmenu
+        websites = buildUrl(accountBaseUrl, "/?subtopic=accountmanagement"), -- ./client_entergame "Forgot password and/or email"
+        createAccount = buildUrl(accountBaseUrl, "/clientcreateaccount.php"), -- ./client_entergame -- createAccount.lua
+        getCoinsUrl = buildUrl(accountBaseUrl, "/?subtopic=shop&step=terms"), -- ./game_market
         clientAssets = {
             enabled = true,
             repository = "dudantas/tibia-client",
@@ -38,10 +40,11 @@ end
 
 local activeBaseUrl = CLIENT_PROFILE == "local" and LOCAL_BASE_URL or VPS_API_BASE_URL
 local activeWebBaseUrl = CLIENT_PROFILE == "local" and LOCAL_WEB_BASE_URL or VPS_WEB_BASE_URL
+local activeAccountBaseUrl = CLIENT_PROFILE == "local" and LOCAL_ACCOUNT_BASE_URL or VPS_ACCOUNT_BASE_URL
 
 -- Default to VPS so local desktop/mac builds point at the deployed stack.
 -- Set TIBIAOT_PROFILE=local to switch back to loopback endpoints.
-Services = buildServices(activeBaseUrl)
+Services = buildServices(activeAccountBaseUrl, activeBaseUrl)
 
 --- Enables or disables the entire server configuration block.
 -- Set to `false` to disable all configuration below.

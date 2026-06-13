@@ -5,6 +5,7 @@ This repo ships the client side, and the VPS stack adds the backend pieces that 
 - MariaDB
 - Canary game server
 - `opentibiabr/login-server`
+- MyAAC account service for `clientcreateaccount.php`
 - nginx serving the browser client
 
 ## Build and run
@@ -17,6 +18,7 @@ Default exposed ports:
 
 - `8090` browser client
 - `8088` login webservice
+- `8089` account creation webservice
 - `7171` login/status
 - `7172` game
 
@@ -24,6 +26,12 @@ Override the web port with:
 
 ```bash
 TIBIAOT_WEB_PORT=8090 docker compose -f docker-compose.vps.yml up -d --build
+```
+
+Override the account service port with:
+
+```bash
+MYAAC_HTTP_PORT=8089 docker compose -f docker-compose.vps.yml up -d --build
 ```
 
 The image serves the Emscripten browser artifacts through nginx with the headers required for cross-origin isolation:
@@ -36,7 +44,13 @@ Those headers are required because the browser build uses pthreads/shared memory
 
 The browser bundle also ships precompressed `*.gz` artifacts for the large `otclient.js`, `otclient.wasm`, and `otclient.data` files so first load is much faster on slower links.
 
-The browser bundle lives on `8090`, but the account/login API stays on `8088`. The client now uses the API base separately, so `clientcreateaccount.php` and `login.php` resolve against `TIBIAOT_API_BASE_URL` instead of the browser bundle origin.
+The browser bundle lives on `8090`, the login API stays on `8088`, and the MyAAC account service lives on `8089`.
+
+- `Services.status` resolves against `TIBIAOT_API_BASE_URL` and points to `login.php` on `8088`
+- `Services.websites` and `Services.createAccount` resolve against `TIBIAOT_ACCOUNT_BASE_URL` and point to MyAAC on `8089`
+- `Services.getCoinsUrl` also uses the account base so the top menu and shop links land on the same site
+
+The MyAAC container bootstraps its own schema into the shared `canary` database on first start, so you do not need to run the MyAAC installer manually on the VPS.
 
 ## Connecting a local client to the VPS API
 
@@ -64,6 +78,12 @@ You can also override the VPS API base URL without editing Lua:
 TIBIAOT_API_BASE_URL=http://your-domain-or-ip:8088
 ```
 
+And the MyAAC/account base separately:
+
+```bash
+TIBIAOT_ACCOUNT_BASE_URL=http://your-domain-or-ip:8089
+```
+
 ## What this compose does not include
 
-The repo does not implement the backend API itself. The compose file wires external backend images together with the web client and the database, but the world, account, and store configuration still need to be set up for your game.
+The repo does not implement the game backend itself. The compose file wires external backend images together with the web client, MyAAC, and the database, but the world and account configuration still need to be set up for your game.
